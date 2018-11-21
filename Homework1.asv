@@ -28,19 +28,16 @@ spy(A)
 
 % Linear PDF plot
 k = unique(degree(:,2)); % all the degree types
-k_gen = k; %saved value of degrees for later estimation on the BA model network generation
-
 % Remove the first element of k since 0 is not an acceptable degree
 k = k(2:length(k));
 k_min = min(k);
 M = length(k);
-pdf_gen = zeros(M+1,2); % a n_nodes x 2 matrix with each row having degree --> #Nodes with that degree/tot nodes
+pdf = zeros(M,2); % a n_nodes x 2 matrix with each row having degree --> #Nodes with that degree/tot nodes
 
-for i = 1:M+1
-    pdf_gen(i,:) = [k_gen(i), histc(degree(:,2),k_gen(i))];
+for i = 1:M
+    pdf(i,:) = [k(i), histc(degree(:,2),k(i))];
 end
-pdf_gen(:,2) = pdf_gen(:,2)./n_links;
-pdf = pdf_gen(2:size(pdf_gen,1),:); %remove the first value which corresponds to a degree = 0
+pdf(:,2) = pdf(:,2)./n_links;
 
 figure('Name','Linear pdf plot')
 scatter(pdf(:,1),pdf(:,2));
@@ -131,13 +128,9 @@ hold off
 gamma_BA = size(A,1)./m;
 
 
-% generating gen_m random values according to the distribution pdf
-gen_m = n_nodes;
-x = rand(1,gen_m);
-edges = cumsum([0; pdf_gen(:,2)]);
+% generating random
+x = rand(1,m);
+edges = cumsum([0, p]);
 y = histc(x,edges);
-
-figure()
-plot(y,'o')
 
 
