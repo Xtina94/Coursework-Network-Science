@@ -97,9 +97,6 @@ for i = 1:M
     ccdm_pdf(i,2) = sum(p_k(i:M));
 end
 
-% % % ccdm_pdf_35(:,2) = c*k.^(1-gamma);
-% % % ccdm_pdf(:,2) = c*k.^(1-gamma_ML);
-
 figure('Name','Logarithmic CCDM_35')
 loglog(ccdm_pdf_35(:,1),ccdm_pdf_35(:,2),'o');
 

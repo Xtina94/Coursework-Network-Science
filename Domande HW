@@ -1,0 +1,14 @@
+Domande da fare:
+- Perchè il # max di nodi in G.data è maggiore del numero effettivo di nodi? Che mi rappresenta?
+- Linea 343: come scelgo il valore di K? Cosa dovrebbe rappresentare?
+- Lab5: cosa intende per "sweep" nodes?
+- Lab3: perchè nella ricerca della componente connessa più grande fallisce nel caso di altri dataset? Soprattutto perchè sto prendendo datset
+	componenti connesse...
+- Nel cercare la componente connessa maggiore sto usando un grafo directed, è forse questo il punto per cui altrimenti l'algoritmo non funziona?
+- Osservazione: nel calcolo della convergenza di hits minore è il numero di iterazioni più la distanza ci mette a raggiungere la soglia del secondo
+	eigenvalue.	PERò, nel caso ti molte iterazioni, la soglia viene falsata e l'algoritmo converge per poi divergere temporaneamente e ritornare alla
+	alla soglia alla fine
+- l'output degree (HW_pt3) è riferito a cosa? PErchè se lo calcolo con il solito modo "sum(A,2)" ottengo valori differenti che se faccio la moltiplicazione
+	per il vettore di 1 e ottengo una AdjM sbagliatissima
+	Se poi seguo la formula della slide gli eig non convergono
+- 
