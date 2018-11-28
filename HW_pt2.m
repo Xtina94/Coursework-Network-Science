@@ -40,7 +40,13 @@ switch y
         A = sparse(A(:,2),A(:,1),ones(size(A,1),1),N,N);
         A = 1*(A+A'>0); % build undirected network
         clear G;
-        directed = 1;
+        Au = 1*(A+A'>0); % undirected network
+        clear G;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
 end
 
 %% Avg neigh degree k_nn (it is given by k_nn = mean(q_m))
@@ -48,6 +54,7 @@ end
 % First, remove the nodes that are isolated
 pos = find(sum(A)~=0);
 A_red = A(pos,pos);
+A_isol = A_red;
 N_red = size(A_red,1);
 
 % Then find the largest connected component in the graph
@@ -102,7 +109,7 @@ p_ii = polyfit(log(u_in(2:end)'),log(k_nn_ii(2:end)),1);
 disp(['Assortativity factor in-in ' num2str(p_ii(1))])
 
 %% Plot the results
-figure('Name','Avg neighbouring degree')
+figure('Name','Assortativity behaviour')
 subplot(2,2,1)
 loglog(d_out,k_tmp_oo,'b.');
 hold on
@@ -141,4 +148,7 @@ loglog(u_in,k_nn_ii,'g.');
 grid
 xlabel('k_{in}')
 ylabel('k_{nn,in}')
+% legend('Average degree of neighbours','Average neighbouring degree', 'Assortativity interpolation');
 title('Network Assortativity. in --> in')
+
+saveas(gcf,'Assortativity.png')

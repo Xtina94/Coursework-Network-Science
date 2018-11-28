@@ -59,6 +59,7 @@ d = full(sum(A,1));
 d = d(d > 0);
 k = unique(d); % degree samples
 k_min = min(k);
+k_max = max(k);
 M = length(k);
 
 % Linear PDF plot
@@ -102,7 +103,7 @@ xlabel('k')
 ylabel('CCDF')
 title('logarithmic CCDF plot')
 
-
+saveas(gcf,'pdfPlots.png')
 %% PDF Logarithmic CCDM plot
 
 %With fixed gamma = 3.5
@@ -136,6 +137,8 @@ loglog(k,p_k/p_k(thr)*pdf(thr),'--');
 hold off
 axis([xlim min(pdf/2) 2*max(pdf)])
 grid
+xlabel('k');
+ylabel('log(pdf)');
 subplot(1,2,2)
 thr = datasample(interval,1);
 loglog(k,Pdf,'o')
@@ -145,47 +148,55 @@ loglog(k,ccdm_pdf/ccdm_pdf(thr)*Pdf(thr),'--');
 hold off
 axis([xlim min(pklog/2) 2*max(Pdf)])
 grid
+xlabel('k');
+ylabel('log(CCDF)');
+
+saveas(gcf,'MLestimate.png')
 
 %% ML fitting with saturation
 % See it later
-% % % 
-% % % for ks = 1:max(k)
-% % %     k_min = min(d);
-% % %     tmp = mean(log((d+ks)/(k_min+ks)));
-% % %     ga2(ks) = 1+1/tmp;
-% % %     de(ks) = log(ga2(ks)-1)-log(k_min+ks)-ga2(ks)*tmp;
-% % % end
-% % % [~,ks] = max(de);
-% % % disp(['k_sat ML sat = ' num2str(ks)])
-% % % disp(['gamma ML sat = ' num2str(ga2(ks))])
-% % % 
-% % % 
-% % % %% Plot the results
-% % % 
-% % % figure(2)
-% % % semilogy(de)
-% % % grid
-% % % xlabel('k_{sat}')
-% % % ylabel('ML target function')
-% % % title('best k_{sat} value')
-% % % 
-% % % figure(3)
-% % % % data
-% % % loglog(k,Pk,'.')
-% % % hold on
-% % % % ML fitting (we make sure that the plot follows the data)
-% % % s1 = k.^(1-gamma); % build the CCDF signal
-% % % loglog(k,s1/s1(150)*Pk(150));
-% % % % ML fitting with saturation
-% % % s1 = ((k+ks)/(k_min+ks)).^(1-ga2(ks));
-% % % loglog(k,s1)
-% % % hold off
-% % % axis([xlim min(Pk/2) 2])
-% % % grid
-% % % xlabel('k')
-% % % ylabel('CCDF')
-% % % title('ML fittings')
-% % % legend('data','ML','ML with sat.')
+
+for ks = 1:max(k)
+    k_min = min(d);
+    tmp = mean(log((d+ks)/(k_min+ks)));
+    ga2(ks) = 1+1/tmp;
+    de(ks) = log(ga2(ks)-1)-log(k_min+ks)-ga2(ks)*tmp;
+end
+[~,ks] = max(de);
+disp(['k_sat ML sat = ' num2str(ks)])
+disp(['gamma ML sat = ' num2str(ga2(ks))])
+
+
+%% Plot the results
+
+figure('Name','ML target function')
+semilogy(de)
+grid
+xlabel('k_{sat}')
+ylabel('ML target function')
+title('best k_{sat} value')
+
+saveas(gcf,'MLtargetFunction,png');
+
+figure('Name','cumulative Pdf')
+% data
+loglog(k,Pdf,'.')
+hold on
+% ML fitting (we make sure that the plot follows the data)
+s1 = k.^(1-gamma_ML); % build the CCDF signal
+loglog(k,s1/s1(thr)*Pdf(thr));
+% ML fitting with saturation
+s1 = ((k+ks)/(k_min+ks)).^(1-ga2(ks));
+loglog(k,s1)
+hold off
+axis([xlim min(Pdf/2) 2])
+grid
+xlabel('k')
+ylabel('CCDF')
+title('ML fittings')
+legend('data','ML','ML with sat.')
+
+ saveas(gcf,'MLfitting.png')
 
 %% Estimation of other parameters
 
@@ -206,5 +217,17 @@ skew_k = pdf'*(k.^3)';
 
 disp(['Moments of the degree dist (average, variance, skewness): ', num2str(avg_k), ' ', num2str(sigma_k), ' ' num2str(skew_k)]);
 
+%%%%% Natural cutoff estimation %%%%%
+k_nat = k_min*N^(1/(gamma_ML-1));
 
+%%%%% Inhomogeneity ratio %%%%%
+inom = sigma_k/avg_k;
 
+%%%% Breaking point estimation %%%%%
+if gamma_ML > 3
+    f_c = 1 - 1/((gamma_ML-2)/(gamma_ML - 3)*k_min - 1);
+else
+    f_c = 1 - 1/((gamma_ML-2)/(3-gamma_ML)*k_min^(gamma_ML-2)*k_max^(3-gamma_ML) - 1);
+end
+
+save('Outputs.mat','n_nodes','n_links','avg_k','sigma_k','skew_k','inom');

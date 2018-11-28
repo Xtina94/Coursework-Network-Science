@@ -111,18 +111,6 @@ comm2 = find(fv1<0);
 
 %% Reordering the nodes wrt fiedler's vector
 
-% % % B = [fv1 (1:size(Wu,1))'];
-% % % bsort(:,1) = sort(B(:,1));
-% % % for i = 1:length(bsort)
-% % %     temp = find(B(:,1) == bsort(i,1));
-% % %     bsort(i,2) = B(temp,2); % bsort has the ordered values in the first column
-% % %                             % and the indexes in the Wu matrix in the
-% % %                             % second one
-% % %     Wu_ord(i,:) = Wu(bsort(i,2),:); % Adjacency matrix whose rows have been 
-% % %                                     % reordered following the fiedler's
-% % %                                     % vector
-% % % end
-
 % reorder the adjacency matrix
 [B,pos] = sort(fv1);
 Wu_ord = Au(pos,pos);
@@ -149,6 +137,9 @@ figure('Name','Conductance measure')
 plot(cond,'g--')
 grid
 title('Conductance')
+ylabel('Cond');
+
+saveas(gcf,'Conductance.png');
 
 % minimum conductance
 disp(['the minimum conductance is: ', num2str(min(cond))]);
@@ -177,9 +168,11 @@ plot(threshold*[1,1],ylim,'r-')
 hold off
 title('communities')
 
+saveas(gcf,'Communities.png');
+
 % show network with partition and links
 if newD < 1e4 % only if edges are not too many!!!
-    figure(4)
+    figure('Name','Communities connected')
     plot(fv1,fv2,'.')
     grid
     [I,J,~] = find(Au);
@@ -188,6 +181,8 @@ if newD < 1e4 % only if edges are not too many!!!
     plot(threshold*[1,1],ylim,'k-')
     hold off
     title('communities (with links)')
+    
+    saveas(gcf,'NetworkCommunities.png');
 end
 
 % save network of largest community 
@@ -196,11 +191,106 @@ if (mpos>=N_red-mpos)
 else
     A_red = A_red(pos(mpos+1:end),pos(mpos+1:end));
 end
-save('previous_community','A')
 
+%%
+%%%%%%%%%%%%%%% Clustering coefficient %%%%%%%%%%%%%%%%%
+% % % N_red = 5; % decomment only in case of algorithm check
+% % % Au = [0 1 1 0 0;
+% % %       1 0 1 0 0;
+% % %       1 1 0 1 1;
+% % %       0 0 1 0 1;
+% % %       0 0 1 1 0];
 
+% Counting the triangles which each node belongs to
+tri = zeros(N_red,1);
+upper_tri = triu(Au);
+for i = 1:N_red
+    pos = find(Au(i,:));   
+    comp = Au(i,:);
+    for j = 1:length(pos)
+        pos_2 = upper_tri(pos(j),:);
+        temp = comp;
+        temp(pos(j)) = 0;
+        bridge = find(temp + pos_2 == 2);
+        tri(i) = tri(i) + length(bridge);
+    end
+end
 
+% total number of triangles
+n_tri = sum(tri);
 
+%% Clustering coefficient
+d = (full(sum(Au,1)))';
+C = 2*tri./(d.*(d-1));
+rm = find(isnan(C));
+C(rm) = 0;
+C_u = unique(C);
 
+% Average clustering coefficient
+C_avg = mean(C);
 
+% plot the distribution
+pdf_C = histc(C,C_u);
+figure('Name','pdf of Clustering coeff')
+plot(C_u,pdf_C,'.')
+grid
+xlabel('C');
+ylabel('pdf(C)');
+
+saveas(gcf,'CLusteringCpdf.png');
+
+save('OutputClustering','cond','A','n_tri','C_avg');
+
+%%
+%%%%%%%%%%%%%%% Clustering coefficient for the whole network %%%%%%%%%%%%%%%%%
+% % % N_red = 5; % decomment only in case of algorithm check
+% % % Au = [0 1 1 0 0;
+% % %       1 0 1 0 0;
+% % %       1 1 0 1 1;
+% % %       0 0 1 0 1;
+% % %       0 0 1 1 0];
+
+% Counting the triangles which each node belongs to
+tri = zeros(N,1);
+if directed
+    Au = 1*(A+A'>0); % undirected full network
+else 
+    Au = A;
+end
+upper_tri = triu(Au);
+for i = 1:N
+    pos = find(Au(i,:));   
+    comp = Au(i,:);
+    for j = 1:length(pos)
+        pos_2 = upper_tri(pos(j),:);
+        temp = comp;
+        temp(pos(j)) = 0;
+        bridge = find(temp + pos_2 == 2);
+        tri(i) = tri(i) + length(bridge);
+    end
+end
+
+% total number of triangles
+n_tri = sum(tri);
+
+%% Clustering coefficient
+d = (full(sum(Au,1)))';
+C = 2*tri./(d.*(d-1));
+rm = find(isnan(C));
+C(rm) = 0;
+C_u = unique(C);
+
+% Average clustering coefficient
+C_avg = mean(C);
+
+% plot the distribution
+pdf_C = histc(C,C_u);
+figure('Name','Pdf of Clustering coeff for the full network')
+plot(C_u,pdf_C,'.')
+grid
+saveas(gcf,'CLusteringCpdfFull.png');
+xlabel('C');
+ylabel('pdf(C)');
+
+save('OutputClusteringull','cond','A','n_tri','C_avg');
 
