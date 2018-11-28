@@ -8,7 +8,7 @@ Domande da fare:
 - Osservazione: nel calcolo della convergenza di hits minore è il numero di iterazioni più la distanza ci mette a raggiungere la soglia del secondo
 	eigenvalue.	PERò, nel caso ti molte iterazioni, la soglia viene falsata e l'algoritmo converge per poi divergere temporaneamente e ritornare alla
 	alla soglia alla fine
-- l'output degree (HW_pt3) è riferito a cosa? PErchè se lo calcolo con il solito modo "sum(A,2)" ottengo valori differenti che se faccio la moltiplicazione
+- l'output degree (HW_pt3) è riferito a cosa? Perchè se lo calcolo con il solito modo "sum(A,2)" ottengo valori differenti che se faccia la moltiplicazione
 	per il vettore di 1 e ottengo una AdjM sbagliatissima
 	Se poi seguo la formula della slide gli eig non convergono
 - 

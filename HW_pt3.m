@@ -1,8 +1,9 @@
 %% %%%%%%%%%%%%%%%%% Ranking %%%%%%%%%%%%%%%%%%%%
 close all
 clear all
+addpath('C:\Users\cryga\Documents\GitHub\HomeworkNS\Datasets');
 
-y = 1;
+y = 5;
 switch y
     case 1
         G = importdata('wiki-Vote.txt', '\t', 4);
@@ -45,6 +46,19 @@ switch y
         G.data = G.data + 1;
         N_red = max(max(G.data));
         A = sparse(G.data(:,2),G.data(:,1),ones(size(G.data,1),1),N_red,N_red);
+        Au = 1*(A+A'>0); % undirected network
+        W = A;
+        clear G;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
+    case 5
+        A = importdata('occupyWs.txt');
+        N = max(max(A));
+        A = sparse(A(:,2),A(:,1),ones(size(A,1),1),N,N);
+        A = 1*(A+A'>0); % build undirected network
         Au = 1*(A+A'>0); % undirected network
         W = A;
         clear G;
@@ -171,7 +185,7 @@ lambdas = eigs(AdjM,size(AdjM,1));
 figure('Name','Eigenvalues representation')
 plot(real(lambdas(2:end)),imag(lambdas(2:end)),'o')
 hold on
-viscircles([0 0],lambdas(1),'Color','g');
+viscircles([0 0],abs(lambdas(1)),'Color','g');
 hold off
 grid
 
@@ -283,3 +297,52 @@ title('PageRank vs HITS ')
 % % % hold off
 % % % legend('PageRank','Hits')
 % % % title('PageRank vs HITS ')
+
+%%
+%%%%%%%%%%%%%%% Clustering coefficient %%%%%%%%%%%%%%%%%
+% % % N_red = 5; % decomment only in case of algorithm check
+% % % Au = [0 1 1 0 0;
+% % %       1 0 1 0 0;
+% % %       1 1 0 1 1;
+% % %       0 0 1 0 1;
+% % %       0 0 1 1 0];
+
+% Counting the triangles which each node belongs to
+tri = zeros(N_red,1);
+upper_tri = triu(Au);
+for i = 1:N_red
+    pos = find(Au(i,:));   
+    comp = Au(i,:);
+    for j = 1:length(pos)
+        pos_2 = upper_tri(pos(j),:);
+        temp = comp;
+        temp(pos(j)) = 0;
+        bridge = find(temp + pos_2 == 2);
+        tri(i) = tri(i) + length(bridge);
+    end
+end
+
+%% Clustering coefficient
+d = (full(sum(Au,1)))';
+C = 2*tri./(d.*(d-1));
+rm = find(isnan(C));
+C(rm) = 0;
+C_u = unique(C);
+
+% Average clustering coefficient
+C_avg = mean(C);
+
+% plot the distribution
+pdf_C = histc(C,C_u);
+figure('Name','pdf of Clustering coeff')
+stem(C_u,pdf_C)
+grid
+
+
+
+
+
+
+
+
+

@@ -1,8 +1,9 @@
 %% %%%%%%%%%%%%%%%%%% ASSORTATIVITY ESTIMATION %%%%%%%%%%%%%%%%%%%%%%%
 close all
 clear all
+addpath('C:\Users\cryga\Documents\GitHub\HomeworkNS\Datasets');
 
-y = 3;
+y = 5;
 switch y
     case 1
         G = importdata('wiki-Vote.txt', '\t', 4);
@@ -30,6 +31,13 @@ switch y
         G.data = G.data + 1;
         N = max(max(G.data));
         A = sparse(G.data(:,2),G.data(:,1),ones(size(G.data,1),1),N,N);
+        A = 1*(A+A'>0); % build undirected network
+        clear G;
+        directed = 1;
+    case 5
+        A = importdata('occupyWs.txt');
+        N = max(max(A));
+        A = sparse(A(:,2),A(:,1),ones(size(A,1),1),N,N);
         A = 1*(A+A'>0); % build undirected network
         clear G;
         directed = 1;

@@ -1,7 +1,8 @@
 close all
 clear all
 
-y = 1;
+addpath('C:\Users\cryga\Documents\GitHub\HomeworkNS\Datasets');
+y = 5;
 switch y
     case 1
         G = importdata('wiki-Vote.txt', '\t', 4);
@@ -29,6 +30,13 @@ switch y
         G.data = G.data + 1;
         N = max(max(G.data));
         A = sparse(G.data(:,2),G.data(:,1),ones(size(G.data,1),1),N,N);
+        A = 1*(A+A'>0); % build undirected network
+        clear G;
+        directed = 1;
+    case 5
+        A = importdata('occupyWs.txt');
+        N = max(max(A));
+        A = sparse(A(:,2),A(:,1),ones(size(A,1),1),N,N);
         A = 1*(A+A'>0); % build undirected network
         clear G;
         directed = 1;
@@ -178,3 +186,25 @@ grid
 % % % ylabel('CCDF')
 % % % title('ML fittings')
 % % % legend('data','ML','ML with sat.')
+
+%% Estimation of other parameters
+
+% Number of nodes
+n_nodes = N;
+disp(['The number of nodes is: ', num2str(n_nodes)]);
+
+% Number of links
+disp(['The total number of links is: ', num2str(n_links)]);
+
+%%%%%%%%% Moments of the degree distribution %%%%%%%%%%%
+% average degree <k>
+avg_k = mean(k);
+% variance of the degree <k^2> (the spread)
+sigma_k = var(k);
+% skewness (for symmetry)
+skew_k = pdf'*(k.^3)';
+
+disp(['Moments of the degree dist (average, variance, skewness): ', num2str(avg_k), ' ', num2str(sigma_k), ' ' num2str(skew_k)]);
+
+
+

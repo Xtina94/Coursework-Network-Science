@@ -1,8 +1,9 @@
 %% %%%%%%%%%%%%%%%%%%% SPECTRAL CLUSTERING %%%%%%%%%%%%%%%%%%%%%
 close all
 clear all
+addpath('C:\Users\cryga\Documents\GitHub\HomeworkNS\Datasets');
 
-y = 1;
+y = 5;
 switch y
     case 1
         G = importdata('wiki-Vote.txt', '\t', 4);
@@ -50,6 +51,19 @@ switch y
         else
             directed = 1;
         end
+    case 5
+        A = importdata('occupyWs.txt');
+        N = max(max(A));
+        A = sparse(A(:,2),A(:,1),ones(size(A,1),1),N,N);
+        A = 1*(A+A'>0); % build undirected network
+        Au = 1*(A+A'>0); % undirected network
+        W = A;
+        clear G;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
 end
 
 %% Preprocessing the network
@@ -74,7 +88,7 @@ D = spdiags(d,0,N_red,N_red); % degree diagonal matrix
 L = spdiags(ones(N_red,1),0,N_red,N_red) - D*Au*D; % the normalized Laplacian matrix
 
 if N_red < 2e3
-    [eigv, lambdas] = eig(L); %extracting eigenvalues and eigenvectors
+    [eigv, lambdas] = eigs(L); %extracting eigenvalues and eigenvectors
     
     figure('Name','Eigenvalues of the Laplacian')
     plot(diag(lambdas),'o');
