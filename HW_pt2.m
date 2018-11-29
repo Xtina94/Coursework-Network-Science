@@ -38,8 +38,8 @@ switch y
         A = importdata('occupyWs.txt');
         N = max(max(A));
         A = sparse(A(:,2),A(:,1),ones(size(A,1),1),N,N);
-        A = 1*(A+A'>0); % build undirected network
-        clear G;
+%         A = 1*(A+A'>0); % build undirected network
+%         clear G;
         Au = 1*(A+A'>0); % undirected network
         clear G;
         if (isequal(A,Au))
@@ -59,18 +59,18 @@ N_red = size(A_red,1);
 
 % Then find the largest connected component in the graph
 %%%%%%%%%%%%%%%% Riattivare una volta capito qual è l'errore %%%%%%%%%%%%%%
-if directed
-    e1 = [1;zeros(N_red-1,1)];
-    exit = false;
-    while(~exit)
-        e1_old = e1;
-        e1 = 1*(A_red*e1+e1>0);
-        exit = (sum(e1-e1_old)==0);
-    end
-    idx = find(e1);
-    A_red = A_red(idx,idx);
-    N_red = size(A_red,1);
-end
+% if directed
+%     e1 = [1;zeros(N_red-1,1)];
+%     exit = false;
+%     while(~exit)
+%         e1_old = e1;
+%         e1 = 1*(A_red*e1+e1>0);
+%         exit = (sum(e1-e1_old)==0);
+%     end
+%     idx = find(e1);
+%     A_red = A_red(idx,idx);
+%     N_red = size(A_red,1);
+% end
 
 % Estimation of avg k_nn = mean on degree
 

@@ -55,7 +55,7 @@ switch y
         A = importdata('occupyWs.txt');
         N = max(max(A));
         A = sparse(A(:,2),A(:,1),ones(size(A,1),1),N,N);
-        A = 1*(A+A'>0); % build undirected network
+%         A = 1*(A+A'>0); % build undirected network
         Au = 1*(A+A'>0); % undirected network
         W = A;
         clear G;

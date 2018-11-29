@@ -145,12 +145,13 @@ First of all, the main metrics of the network have been extracted and are summed
   \firsthline
   Metric & Value\\
   \hline
-    Average degree & $29.59$\\
-    Number of links & $1862$\\
+    Average degree & $19.71$\\
+    Number of links & $931$\\
     Number of nodes & $3594$\\
-    Nodes degree variance & $764.83$\\
-    Nodes degree skewness & $2651.44$\\
-    Inhomogeneity ratio $k$ & $25.8477$\\
+    Average distance & $2.1026$\\
+    Nodes degree variance & $353.77$\\
+    Nodes degree skewness & $1194.8$\\
+    Inhomogeneity ratio $k$ & $17.9447$\\
   \lasthline
 \end{tabular}
 \caption{Network metrics concerning nodes and links number and the degree moments.}
@@ -165,7 +166,7 @@ First of all, the main metrics of the network have been extracted and are summed
 \end{figure}
 
 \subsection*{Power law exponent estimate}
-For what concerns the power law exponent, \autoref{fig:ML} and \autoref{fig:MLest} show the $\gamma$ exponent estimation through ML fitting. The resulting value of $\gamma$ is $3.7736$ which does not go far from the classic hypothesis of $\gamma = 3.5$ and tells us that the network behaves as a common random scale-free network.
+For what concerns the power law exponent, \autoref{fig:ML} and \autoref{fig:MLest} show the $\gamma$ exponent estimation through ML fitting. The resulting value of $\gamma$ is $2.8551$ which is lower than the classic hypothesis of $\gamma = 3.5$ and tells us that the network behaves as a scale-free network.
 
 \begin{figure}
 \centering
@@ -230,7 +231,7 @@ $0.7160$ & $0.0253$\\
 \end{figure}
 
 \subsection*{Assortativity values}
-The resulting assortativity average values is $-0.46$, which means that the network has disassortative properties. The result is confirmed also by the neutral behaviour that emerged in the previous section and \autoref{fig:ND}. To be specific, the four graphs are equal, since the original network is undirected and the output degrees are specular to the input degrees. The effects of it, can be also observed in \autoref{fig:netComm} where we can foresee how nodes tend to connect to other elements having a different degree, resulting in a sort of "uniform mesh effect". In this case the structural cutoff comes around the degree magnitude $6$, which of course is smaller than the natural cutoff identifying the largest hub ($19.14$).
+The resulting assortativity average values is $-0.2996$, which means that the network has disassortative properties. The result is confirmed also by the neutral behaviour that emerged in the previous section and \autoref{fig:ND}. The effects of it, can be also observed in \autoref{fig:netComm} where we can foresee how nodes tend to connect to other elements having a different degree, resulting in a sort of "uniform mesh effect". In this case the structural cutoff comes around the degree magnitude $38$, which of course is smaller than the natural cutoff identifying the largest hub ($82.55$).
 
 \begin{figure}
 \centering
@@ -240,8 +241,7 @@ The resulting assortativity average values is $-0.46$, which means that the netw
 \end{figure}
 
 \subsection*{Network robustness}
-Finally, attention must be paid to the network robustness, which can be summarized by the values of the inhomogeneity ratio and the breaking point estimate. The former is equal to $25.8477 > 2$ and so we confirm the presence of a giant component; the latter is equal to $0.2264$ which is rather low and signals a weak network. This conclusion is also confirmed by the low average degree of the nodes.
-
+Finally, attention must be paid to the network robustness, which can be summarized by the values of the inhomogeneity ratio and the breaking point estimate. The former is equal to $17.9447 > 2$ and so we confirm the presence of a giant component; the latter is equal to $0.8992$ which is rather high and signals a robust network, despite the low average degree of the nodes.
  \bibliographystyle{ieeetr}
  \bibliography{BibHack}
 \end{document}

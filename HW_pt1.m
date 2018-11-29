@@ -9,22 +9,37 @@ switch y
         N = max(max(G.data));
         A = sparse(G.data(:,2),G.data(:,1),ones(size(G.data,1),1),N,N);
         W = A; %Save adjacency matrix for later work on communities
+        Au = 1*(A+A'>0); % undirected network
         clear G;
-        directed = 1;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
     case 2
         G = importdata('bioCel.txt');
         N = max(max(G));
         A = sparse(G(:,2),G(:,1),ones(size(G,1),1),N,N);
         W = A;
+        Au = 1*(A+A'>0); % undirected network
         clear G;
-        directed = 0;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
     case 3
         G = importdata('ca_sandi_auths.txt');
         N = max(max(G));
         A = sparse(G(:,2),G(:,1),ones(size(G,1),1),N,N);
         W = A;
+        Au = 1*(A+A'>0); % undirected network
         clear G;
-        directed = 0;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
     case 4
         G = importdata('collaboration.edgelist.txt', '\t', 1);
         G.data = G.data + 1;
@@ -32,28 +47,27 @@ switch y
         A = sparse(G.data(:,2),G.data(:,1),ones(size(G.data,1),1),N,N);
         A = 1*(A+A'>0); % build undirected network
         clear G;
-        directed = 1;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
     case 5
         A = importdata('occupyWs.txt');
         N = max(max(A));
         A = sparse(A(:,2),A(:,1),ones(size(A,1),1),N,N);
-        A = 1*(A+A'>0); % build undirected network
+        Au = 1*(A+A'>0); % undirected network
         clear G;
-        directed = 1;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
 end
-
-
-% adjacency matrix
-% NOTA PER ME: in G.data non sono elencati tutti i nodi che sono isolati,
-% per questo motivo il numero massimo di nodi presente è maggiore del
-% numero di elementi effettivamente presenti in G.data, perchè i nodi non
-% elencati sono isolati
-
-
 
 %% Extract the distribution
 
-% distribution. degree is a 2 columns vector with node# --> deg
+% distribution. degree is a 1 column vector with node degrees
 d = full(sum(A,1));
 % Remove the first elements of k since 0 is not an acceptable degree
 d = d(d > 0);
@@ -104,6 +118,7 @@ ylabel('CCDF')
 title('logarithmic CCDF plot')
 
 saveas(gcf,'pdfPlots.png')
+
 %% PDF Logarithmic CCDM plot
 
 %With fixed gamma = 3.5
@@ -111,10 +126,10 @@ gamma = 3.5;
 c = (gamma-1)*k_min^(gamma-1);
 
 %With ML estimation of gamma
-k_min = floor(max(d)/2);
-d2 = d(d>=k_min); % restrict range
+k_min_temp = floor(max(d)/2);
+d2 = d(d>=k_min_temp); % restrict range
 
-j = d2/k_min;
+j = d2/k_min_temp;
 den = sum(log(j));
 n_nodes = sum(length(d2));
 gamma_ML = 1+(n_nodes/den);
@@ -154,18 +169,16 @@ ylabel('log(CCDF)');
 saveas(gcf,'MLestimate.png')
 
 %% ML fitting with saturation
-% See it later
 
-for ks = 1:max(k)
-    k_min = min(d);
-    tmp = mean(log((d+ks)/(k_min+ks)));
-    ga2(ks) = 1+1/tmp;
-    de(ks) = log(ga2(ks)-1)-log(k_min+ks)-ga2(ks)*tmp;
+for i = 1:max(k)
+    tmp = mean(log((d+i)/(k_min+i)));
+    ga2(i) = 1+1/tmp;
+    de(i) = log(ga2(i)-1)-log(k_min+i)-ga2(i)*tmp;
 end
-[~,ks] = max(de);
-disp(['k_sat ML sat = ' num2str(ks)])
-disp(['gamma ML sat = ' num2str(ga2(ks))])
 
+[~,i] = max(de);
+disp(['k_sat ML sat = ' num2str(i)])
+disp(['gamma ML sat = ' num2str(ga2(i))])
 
 %% Plot the results
 
@@ -186,7 +199,7 @@ hold on
 s1 = k.^(1-gamma_ML); % build the CCDF signal
 loglog(k,s1/s1(thr)*Pdf(thr));
 % ML fitting with saturation
-s1 = ((k+ks)/(k_min+ks)).^(1-ga2(ks));
+s1 = ((k+i)/(k_min+i)).^(1-ga2(i));
 loglog(k,s1)
 hold off
 axis([xlim min(Pdf/2) 2])
@@ -200,14 +213,15 @@ legend('data','ML','ML with sat.')
 
 %% Estimation of other parameters
 
-% Number of nodes
+%%%% Number of nodes %%%%
 n_nodes = N;
 disp(['The number of nodes is: ', num2str(n_nodes)]);
 
-% Number of links
+%%%% Number of links %%%%
 disp(['The total number of links is: ', num2str(n_links)]);
 
-%%%%%%%%% Moments of the degree distribution %%%%%%%%%%%
+%%%% Moments of the degree distribution %%%%
+
 % average degree <k>
 avg_k = mean(k);
 % variance of the degree <k^2> (the spread)

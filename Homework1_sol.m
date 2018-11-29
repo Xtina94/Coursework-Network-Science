@@ -1,29 +1,45 @@
 close all
 clear all
 
-y = 3;
+addpath('C:\Users\cryga\Documents\GitHub\HomeworkNS\Datasets');
+y = 5;
 switch y
     case 1
         G = importdata('wiki-Vote.txt', '\t', 4);
         N = max(max(G.data));
         A = sparse(G.data(:,2),G.data(:,1),ones(size(G.data,1),1),N,N);
         W = A; %Save adjacency matrix for later work on communities
+        Au = 1*(A+A'>0); % undirected network
         clear G;
-        directed = 1;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
     case 2
         G = importdata('bioCel.txt');
         N = max(max(G));
         A = sparse(G(:,2),G(:,1),ones(size(G,1),1),N,N);
         W = A;
+        Au = 1*(A+A'>0); % undirected network
         clear G;
-        directed = 0;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
     case 3
         G = importdata('ca_sandi_auths.txt');
         N = max(max(G));
         A = sparse(G(:,2),G(:,1),ones(size(G,1),1),N,N);
         W = A;
+        Au = 1*(A+A'>0); % undirected network
         clear G;
-        directed = 0;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
     case 4
         G = importdata('collaboration.edgelist.txt', '\t', 1);
         G.data = G.data + 1;
@@ -31,26 +47,33 @@ switch y
         A = sparse(G.data(:,2),G.data(:,1),ones(size(G.data,1),1),N,N);
         A = 1*(A+A'>0); % build undirected network
         clear G;
-        directed = 1;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
+    case 5
+        A = importdata('occupyWs.txt');
+        N = max(max(A));
+        A = sparse(A(:,2),A(:,1),ones(size(A,1),1),N,N);
+        Au = 1*(A+A'>0); % undirected network
+        clear G;
+        if (isequal(A,Au))
+            directed = 0;
+        else
+            directed = 1;
+        end
 end
 
+%% %%%%%%%%%%%%%%%% DISTRIBUTION EXTRACTION AND EXPONENTIAL LAW %%%%%%%%%%%%%%%
 
-% adjacency matrix
-% NOTA PER ME: in G.data non sono elencati tutti i nodi che sono isolati,
-% per questo motivo il numero massimo di nodi presente è maggiore del
-% numero di elementi effettivamente presenti in G.data, perchè i nodi non
-% elencati sono isolati
-
-
-
-%% Extract the distribution
-
-% distribution. degree is a 2 columns vector with node# --> deg
+% distribution. degree is a 1 column vector with node degrees
 d = full(sum(A,1));
 % Remove the first elements of k since 0 is not an acceptable degree
 d = d(d > 0);
 k = unique(d); % degree samples
 k_min = min(k);
+k_max = max(k);
 M = length(k);
 
 % Linear PDF plot
@@ -94,6 +117,7 @@ xlabel('k')
 ylabel('CCDF')
 title('logarithmic CCDF plot')
 
+saveas(gcf,'pdfPlots.png')
 
 %% PDF Logarithmic CCDM plot
 
@@ -102,10 +126,10 @@ gamma = 3.5;
 c = (gamma-1)*k_min^(gamma-1);
 
 %With ML estimation of gamma
-k_min = floor(max(d)/2);
-d2 = d(d>=k_min); % restrict range
+k_min_temp = floor(max(d)/2);
+d2 = d(d>=k_min_temp); % restrict range
 
-j = d2/k_min;
+j = d2/k_min_temp;
 den = sum(log(j));
 n_nodes = sum(length(d2));
 gamma_ML = 1+(n_nodes/den);
@@ -128,6 +152,8 @@ loglog(k,p_k/p_k(thr)*pdf(thr),'--');
 hold off
 axis([xlim min(pdf/2) 2*max(pdf)])
 grid
+xlabel('k');
+ylabel('log(pdf)');
 subplot(1,2,2)
 thr = datasample(interval,1);
 loglog(k,Pdf,'o')
@@ -137,81 +163,98 @@ loglog(k,ccdm_pdf/ccdm_pdf(thr)*Pdf(thr),'--');
 hold off
 axis([xlim min(pklog/2) 2*max(Pdf)])
 grid
+xlabel('k');
+ylabel('log(CCDF)');
+
+saveas(gcf,'MLestimate.png')
 
 %% ML fitting with saturation
-% See it later
-% % % 
-% % % for ks = 1:max(k)
-% % %     k_min = min(d);
-% % %     tmp = mean(log((d+ks)/(k_min+ks)));
-% % %     ga2(ks) = 1+1/tmp;
-% % %     de(ks) = log(ga2(ks)-1)-log(k_min+ks)-ga2(ks)*tmp;
-% % % end
-% % % [~,ks] = max(de);
-% % % disp(['k_sat ML sat = ' num2str(ks)])
-% % % disp(['gamma ML sat = ' num2str(ga2(ks))])
-% % % 
-% % % 
-% % % %% Plot the results
-% % % 
-% % % figure(2)
-% % % semilogy(de)
-% % % grid
-% % % xlabel('k_{sat}')
-% % % ylabel('ML target function')
-% % % title('best k_{sat} value')
-% % % 
-% % % figure(3)
-% % % % data
-% % % loglog(k,Pk,'.')
-% % % hold on
-% % % % ML fitting (we make sure that the plot follows the data)
-% % % s1 = k.^(1-gamma); % build the CCDF signal
-% % % loglog(k,s1/s1(150)*Pk(150));
-% % % % ML fitting with saturation
-% % % s1 = ((k+ks)/(k_min+ks)).^(1-ga2(ks));
-% % % loglog(k,s1)
-% % % hold off
-% % % axis([xlim min(Pk/2) 2])
-% % % grid
-% % % xlabel('k')
-% % % ylabel('CCDF')
-% % % title('ML fittings')
-% % % legend('data','ML','ML with sat.')
 
-%% Probability of connecting to node i
+for i = 1:max(k)
+    tmp = mean(log((d+i)/(k_min+i)));
+    ga2(i) = 1+1/tmp;
+    de(i) = log(ga2(i)-1)-log(k_min+i)-ga2(i)*tmp;
+end
 
-p_conn = d/sum(d);
+[~,i] = max(de);
+disp(['k_sat ML sat = ' num2str(i)])
+disp(['gamma ML sat = ' num2str(ga2(i))])
 
-% % % %% Degree distribution for Barabàsi-Albert (BA) model
-% % % 
-% % % m = 1:5; % number of trials for connections
-% % % pdf_BA = [pdf' zeros(M,length(m)-1)];
-% % % pdf_BA(:,2:size(pdf_BA,2)) = (2*m.^2)./(pdf(:,1).^3);
-% % % 
-% % % % Plotting the BA distribution
-% % % figure('Name','BA model log distribution')
-% % % loglog(pdf_BA(:,1),pdf_BA(:,2),'o');
-% % % hold on
-% % % for i = 3:size(pdf_BA,2)
-% % %     loglog(pdf_BA(:,1),pdf_BA(:,i),'o');
-% % % end
-% % % hold off
-% % % 
-% % % % DOMANDA: perchè mi vengono probabilità > 1?????
-% % % 
-% % % % Expected gamma exponent A/m
-% % % gamma_BA = size(A,1)./m;
+%% Plot the results
 
+figure('Name','ML target function')
+semilogy(de)
+grid
+xlabel('k_{sat}')
+ylabel('ML target function')
+title('best k_{sat} value')
 
-% % % % generating gen_m random values according to the distribution pdf
-% % % gen_m = n_nodes;
-% % % x = rand(1,gen_m);
-% % % edges = cumsum([0; pdf_gen(:,2)]);
-% % % y = histc(x,edges);
-% % % 
-% % % figure()
-% % % plot(y,'o')
+saveas(gcf,'MLtargetFunction,png');
+
+figure('Name','cumulative Pdf')
+% data
+loglog(k,Pdf,'.')
+hold on
+% ML fitting (we make sure that the plot follows the data)
+s1 = k.^(1-gamma_ML); % build the CCDF signal
+loglog(k,s1/s1(thr)*Pdf(thr));
+% ML fitting with saturation
+s1 = ((k+i)/(k_min+i)).^(1-ga2(i));
+loglog(k,s1)
+hold off
+axis([xlim min(Pdf/2) 2])
+grid
+xlabel('k')
+ylabel('CCDF')
+title('ML fittings')
+legend('data','ML','ML with sat.')
+
+ saveas(gcf,'MLfitting.png')
+
+%% Estimation of other parameters
+
+%%%% Number of nodes %%%%
+n_nodes = N;
+disp(['The number of nodes is: ', num2str(n_nodes)]);
+
+%%%% Number of links %%%%
+disp(['The total number of links is: ', num2str(n_links)]);
+
+%%%% Moments of the degree distribution %%%%
+
+% average degree <k>
+avg_k = mean(k);
+% variance of the degree <k^2> (the spread)
+sigma_k = var(k);
+% skewness (for symmetry)
+skew_k = pdf'*(k.^3)';
+
+%%%% Average distance %%%%
+if (2 < gamma_ML) && (gamma_ML < 3)
+    avg_dist = log(log(N));
+elseif gamma_ML == 3
+    avg_dist = log(N)/log(log(N));
+elseif gamma_ML > 3
+    avg_dist = log(N);
+end
+        
+disp(['Moments of the degree dist (average, variance, skewness): ', num2str(avg_k), ' ', num2str(sigma_k), ' ' num2str(skew_k)]);
+disp(['Average distance: ',num2str(avg_dist)]);
+
+%%%%% Natural cutoff estimation %%%%%
+k_nat = k_min*N^(1/(gamma_ML-1));
+
+%%%%% Inhomogeneity ratio %%%%%
+inom = sigma_k/avg_k;
+
+%%%% Breaking point estimation %%%%%
+if gamma_ML > 3
+    f_c = 1 - 1/((gamma_ML-2)/(gamma_ML - 3)*k_min - 1);
+else
+    f_c = 1 - 1/((gamma_ML-2)/(3-gamma_ML)*k_min^(gamma_ML-2)*k_max^(3-gamma_ML) - 1);
+end
+
+save('Outputs.mat','n_nodes','n_links','avg_k','sigma_k','skew_k','inom');
 
 %% %%%%%%%%%%%%%%%%%% ASSORTATIVITY ESTIMATION %%%%%%%%%%%%%%%%%%%%%%%
 
@@ -220,47 +263,33 @@ p_conn = d/sum(d);
 % First, remove the nodes that are isolated
 pos = find(sum(A)~=0);
 A_red = A(pos,pos);
-N = size(A_red,1);
-
-% Then find the largest directed component in the graph
-%%%%%%%%%%%%%%%% Riattivare una volta capito qual è l'errore %%%%%%%%%%%%%%
-if directed
-    e1 = [1;zeros(N-1,1)];
-    exit = false;
-    while(~exit)
-        e1_old = e1;
-        e1 = 1*(A_red*e1+e1>0);
-        exit = (sum(e1-e1_old)==0);
-    end
-    idx = find(e1);
-    A_red = A_red(idx,idx);
-    N = size(A_red,1);
-end
+A_isol = A_red;
+N_red = size(A_red,1);
 
 % Estimation of avg k_nn = mean on degree
 
 % degrees
-d_red_in = sum(A_red,2);
-d_red_out = sum(A_red)';
+d_in = sum(A_red,2);
+d_out = sum(A_red)';
 
 % averages of neighbours
-k_tmp_oo = (A_red'*d_red_out)./d_red_out;
-k_tmp_oi = (A_red'*d_red_in)./d_red_out;
-k_tmp_ii = (A_red*d_red_in)./d_red_in;
-k_tmp_io = (A_red*d_red_out)./d_red_in;
+k_tmp_oo = (A_red'*d_out)./d_out;
+k_tmp_oi = (A_red'*d_in)./d_out;
+k_tmp_ii = (A_red*d_in)./d_in;
+k_tmp_io = (A_red*d_out)./d_in;
 
 % extract averages for each value of k
-u_out = unique(d_red_out);
+u_out = unique(d_out);
 for i = 1:length(u_out)
-    k_nn_oo(i) = mean(k_tmp_oo(d_red_out==u_out(i)));
-    k_nn_oi(i) = mean(k_tmp_oi(d_red_out==u_out(i))); % this is the mean of the neighbouring degree 
+    k_nn_oo(i) = mean(k_tmp_oo(d_out==u_out(i)));
+    k_nn_oi(i) = mean(k_tmp_oi(d_out==u_out(i))); % this is the mean of the neighbouring degree 
                                                       % of all the nodes having the same degree
 end
 
-u_in = unique(d_red_in);
+u_in = unique(d_in);
 for i = 1:length(u_in)
-    k_nn_io(i) = mean(k_tmp_io(d_red_in == u_in(i)));
-    k_nn_ii(i) = mean(k_tmp_ii(d_red_in == u_in(i)));
+    k_nn_io(i) = mean(k_tmp_io(d_in == u_in(i)));
+    k_nn_ii(i) = mean(k_tmp_ii(d_in == u_in(i)));
 end
 
 % do the linear fittings
@@ -273,10 +302,13 @@ disp(['Assortativity factor out-in ' num2str(p_oi(1))])
 p_ii = polyfit(log(u_in(2:end)'),log(k_nn_ii(2:end)),1);
 disp(['Assortativity factor in-in ' num2str(p_ii(1))])
 
+% Take the average
+assort_avg = mean([p_oo(1), p_io(1), p_oi(1), p_ii(1)]);
+
 %% Plot the results
-figure('Name','Avg neighbouring degree')
+figure('Name','Assortativity behaviour')
 subplot(2,2,1)
-loglog(d_red_out,k_tmp_oo,'b.');
+loglog(d_out,k_tmp_oo,'b.');
 hold on
 loglog(u_out,exp(p_oo(2)+log(u_out)*p_oo(1)),'r-');
 loglog(u_out,k_nn_oo,'g.');
@@ -286,7 +318,7 @@ ylabel('k_{nn,out}')
 title('Network Assortativity. out --> out')
 
 subplot(2,2,2)
-loglog(d_red_out,k_tmp_oi,'b.');
+loglog(d_out,k_tmp_oi,'b.');
 hold on
 loglog(u_out,exp(p_oi(2)+log(u_out)*p_oi(1)),'r-');
 loglog(u_out,k_nn_oi,'g.');
@@ -296,7 +328,7 @@ ylabel('k_{nn,out}')
 title('Network Assortativity. out --> in')
 
 subplot(2,2,3)
-loglog(d_red_in,k_tmp_io,'b.');
+loglog(d_in,k_tmp_io,'b.');
 hold on
 loglog(u_in,exp(p_io(2)+log(u_in)*p_io(1)),'r-');
 loglog(u_in,k_nn_io,'g.');
@@ -306,239 +338,41 @@ ylabel('k_{nn,in}')
 title('Network Assortativity. in --> out')
 
 subplot(2,2,4)
-loglog(d_red_in,k_tmp_ii,'b.');
+loglog(d_in,k_tmp_ii,'b.');
 hold on
 loglog(u_in,exp(p_ii(2)+log(u_in)*p_ii(1)),'r-');
 loglog(u_in,k_nn_ii,'g.');
 grid
 xlabel('k_{in}')
 ylabel('k_{nn,in}')
+% legend('Average degree of neighbours','Average neighbouring degree', 'Assortativity interpolation');
 title('Network Assortativity. in --> in')
 
+saveas(gcf,'Assortativity.png')
 
-%% %%%%%%%%%%%%%%%%% Ranking %%%%%%%%%%%%%%%%%%%%
-
-% Create the equivalent undirected network, only if the network is directed
-if directed
-    Au = 1*(A+A'>0); % undirected network
-    idx = find(sum(Au)~=0);
-    A_red = A_red(idx,idx);
-    Au = Au(idx,idx);
-    
-    % remove dead ends
-    exit = false;
-    while (~exit)
-        idx = find(sum(A)~=0);
-        A_red = A_red(idx,idx);
-        Au = Au(idx,idx);
-        N = size(A_red,1);
-        exit = isempty(find(sum(A_red)==0, 1));
-    end
-else
-    Au = A_red;
-end
-
-% find the largest connected component for the undirected graph
-if directed
-    e1 = [1;zeros(N-1,1)];
-    exit = false;
-    while(~exit)
-        e1_old = e1;
-        e1 = 1*(Au*e1>0);
-        exit = (sum(e1-e1_old)==0);
-    end
-    idx = find(e1);
-    A_red = A_red(idx,idx);
-    N = size(A_red,1);
-end
-
-%% PageRank equation evaluation 
-
-c = 0.85; %damping factor
-q = ones(N,1)/N; %teleportation vector
-d_out = A_red'*ones(size(A_red,1),1); %output degree vector
-AdjM = A_red*sparse(diag(d_out.^(-1))); %Weighted adjacency matrix
-M_11 = c*AdjM;
-M_12 = (1-c)*q;
-
-% Through linear system solution
-tic
-pr_ls = (sparse(eye(size(AdjM,1))) - M_11)\((1-c)*q);
-pr_ls = pr_ls/sum(pr_ls);
-toc
-
-% Through power iteration
-t = 40; % number of iterations
-tic
-pr = ones(N,1)/N; % initial guess on p_0(i)
-s = zeros(t,1);
-for i = 1:t
-    pr_old = pr;
-    % iterative step
-    pr = M_11*pr + M_12;
-    pr = pr/sum(pr);
-    s(i) = norm(pr - pr_ls)/sqrt(N);
-end
-toc
-distance = s;
-
-%%%%%%%%%%%% Checking for convergence %%%%%%%%%%%%%
-
-% Extract eigenvalues
-disp('Extracting the eigenvalues')
-tic
-lambdas = eigs(AdjM,size(AdjM,1));
-toc
-
-lambda_2 = lambdas(2); %take the second eigenvalue, since the first one is 1 and stands for the connected component
-
-thr = (c*abs(lambda_2)).^(1:t);
-convergence = (distance' <= thr); %Checking if there is convergence in the solution
-
-figure('Name','Convergence of the power iteration method for PageRank equation')
-set(0,'defaultTextInterpreter','latex') % to use LaTeX format
-semilogy((1:t),distance)
-grid
-xlabel('k [iteration \#]')
-ylabel('$\|r_k - r_\infty\|$')
-title('PageRank convergence')
-
-figure('Name','Eigenvalues representaion')
-plot(real(lambdas(2:end)),imag(lambdas(2:end)),'o')
-hold on
-viscircles([0 0],lambdas(1),'Color','g');
-hold off
-grid
-
-%% HITS equation evaluation - authorities scores
-
-AdjM = sparse(A*A');
-
-% Through linear system solution
-tic
-[hits_ls_vect, hits_ls] = eigs(AdjM,2);
-pr_dir_aut = -hits_ls_vect(:,1)/norm(hits_ls_vect(:,1)); % Extract the most importand dimension and project the values wrt to that (SVD)
-toc
-
-% Through power iteration
-tic
-N = size(AdjM,1);
-hits = ones(N,1)/N; % initial guess
-s = zeros(t,1);
-for i = 1:t
-    temp = hits;
-    hits = AdjM*hits; % iterative step
-    hits = hits/norm(hits); % normalization step
-    s(i) = norm(hits - temp)/sqrt(N);
-end
-toc
-
-thr_hits = (abs(hits_ls(2)/hits_ls(1))).^(1:t);
-convergence_hits = (s <= thr); %Checking if there is convergence in the solution
-
-figure('Name','Convergence of the power iteration method for Hits equation')
-set(0,'defaultTextInterpreter','latex') % to use LaTeX format
-semilogy((1:t),s)
-grid
-xlabel('k [iteration \#]')
-ylabel('$\|hits_k - hits_\infty\|$')
-title('Hits convergence')
-
-%% HITS equation evaluation - hubs scores
-
-% Through linear system solution
-tic
-M_2 = c*AdjM;
-[hits_ls_vect, hits_ls] = eigs(M_2,2);
-pr_dir_hub = -hits_ls_vect(:,1)/norm(hits_ls_vect(:,1)); % Extract the most importand dimension and project the values wrt to that (SVD)
-toc
-
-% Through power iteration
-tic
-N = size(AdjM,1);
-hits = ones(N,1)/N; % initial guess
-s = zeros(t,1);
-for i = 1:t
-    temp = hits;
-    hits = M_2*hits; % iterative step
-    hits = hits/norm(hits); % normalization step
-    s(i) = norm(hits - temp)/sqrt(N);
-end
-toc
-
-thr_hits = (abs(hits_ls(2)/hits_ls(1))).^(1:t);
-convergence_hits = (s <= thr); %Checking if there is convergence in the solution
-
-%% %%%%%%%%%%% Comparing PageRank and Hits %%%%%%%%%%%%%%
-
-figure('Name','Comparison between PageRank and Hits authorities scores')
-plot(pr_dir_aut/sum(pr_dir_aut),pr_ls/sum(pr_ls),'o')
-grid
-title('PageRank vs HITS ')
-
-figure('Name','Comparison between PageRank and hits authorities scores')
-set(0,'defaultTextInterpreter','latex') % to use LaTeX format
-plot(1:N,pr_ls/sum(pr_ls))
-grid
-hold on
-plot(1:N,-pr_dir_aut/sum(pr_dir_aut))
-hold off
-legend('PageRank','Hits')
-title('PageRank vs HITS ')
-
-% % % figure('Name','Comparison between PageRank and Hits hubs scores')
-% % % set(0,'defaultTextInterpreter','latex') % to use LaTeX format
-% % % % plot(hits,pr,'o')
-% % % plot(pr_dir_hub/sum(pr_dir_hub),pr_ls/sum(pr_ls),'o')
-% % % grid
-% % % xlabel('Hits scores')
-% % % ylabel('PageRank scores')
-% % % title('Hits convergence')
-% % % 
-% % % figure('Name','Comparison between PageRank and hits hubs scores')
-% % % set(0,'defaultTextInterpreter','latex') % to use LaTeX format
-% % % plot(1:N,pr_ls/sum(pr_ls))
-% % % grid
-% % % hold on
-% % % plot(1:N,-pr_dir_hub/sum(pr_dir_hub))
-% % % hold off
-% % % legend('PageRank','Hits')
-% % % title('PageRank vs HITS ')
-
-%% %%%%%%%%%%%%%%%%%%% SPECTRAL CLUSTERING %%%%%%%%%%%%%%%%%%%%%
-
-% food web -> 0.19
-% https://www.nceas.ucsb.edu/interactionweb/html/thomps_towns.html
-% G = importdata('./Narrowdaletxt.txt', '\t');
-% W = sparse(1*(G>0));
-% clear G;
-
-%% Preprocessing the network
-
-% Remove non-connected components
-pos = find(sum(W,1));
-W = W(pos,pos);
+%% %%%%%%%%%%%%%%%%%%%%% SPECTRAL CLUSTERING %%%%%%%%%%%%%%%%%%%%%%%
 
 % Equivalent undirected network, if it is the case
 if directed
-    Wu = 1*(W+W'>0);
-    Wu = Wu - diag(diag(Wu)); % clear diagonal
-    pos = find(sum(Wu,1));
-    Wu = Wu(pos,pos);
+    pos = find(sum(Au)~=0);
+    Au = Au(pos,pos);
+    A_red = A(pos,pos);
 else
-    Wu = W;
+    pos = find(sum(A)~=0);
+    A_red = A(pos,pos);
+    Au = A_red;
 end
 % Network size
-N = size(Wu,1);
+N_red = size(Au,1);
 
 % Spectral domain info
-d = full(sum(Wu)); % the degree vector
-D = diag(d); % degree diagonal matrix
-% spidiags(ones(N,1),0,N,N)
-L = eye(N) - D^(-0.5)*Wu*D^(-0.5); % the normalized Laplacian matrix
+d = full(sum(Au)); % the degree vector
+d = ones(N_red,1)./sqrt(d);
+D = spdiags(d,0,N_red,N_red); % degree diagonal matrix
+L = spdiags(ones(N_red,1),0,N_red,N_red) - D*Au*D; % the normalized Laplacian matrix
 
-if N < 2e3
-    [eigv, lambdas] = eig(L); %extracting eigenvalues and eigenvectors
+if N_red < 2e3
+    [eigv, lambdas] = eigs(L); %extracting eigenvalues and eigenvectors
     
     figure('Name','Eigenvalues of the Laplacian')
     plot(diag(lambdas),'o');
@@ -561,21 +395,9 @@ comm2 = find(fv1<0);
 
 %% Reordering the nodes wrt fiedler's vector
 
-% % % B = [fv1 (1:size(Wu,1))'];
-% % % bsort(:,1) = sort(B(:,1));
-% % % for i = 1:length(bsort)
-% % %     temp = find(B(:,1) == bsort(i,1));
-% % %     bsort(i,2) = B(temp,2); % bsort has the ordered values in the first column
-% % %                             % and the indexes in the Wu matrix in the
-% % %                             % second one
-% % %     Wu_ord(i,:) = Wu(bsort(i,2),:); % Adjacency matrix whose rows have been 
-% % %                                     % reordered following the fiedler's
-% % %                                     % vector
-% % % end
-
 % reorder the adjacency matrix
 [B,pos] = sort(fv1);
-Wu_ord = Wu(pos,pos);
+Wu_ord = Au(pos,pos);
 
 % Finding the conductance measure
 a = sum(triu(Wu_ord)); % the degree of the columns
@@ -599,6 +421,9 @@ figure('Name','Conductance measure')
 plot(cond,'g--')
 grid
 title('Conductance')
+ylabel('Cond');
+
+saveas(gcf,'Conductance.png');
 
 % minimum conductance
 disp(['the minimum conductance is: ', num2str(min(cond))]);
@@ -613,7 +438,7 @@ else
     disp('Are you sure it is the right way?');
 end
 
-%% 
+%% Network partitioning
 
 % show network with partition
 [mincond,mpos] = min(cond);
@@ -627,32 +452,121 @@ plot(threshold*[1,1],ylim,'r-')
 hold off
 title('communities')
 
+saveas(gcf,'Communities.png');
+
 % show network with partition and links
 if newD < 1e4 % only if edges are not too many!!!
-    figure(4)
+    figure('Name','Communities connected')
     plot(fv1,fv2,'.')
     grid
-    [I,J,~] = find(Wu);
+    [I,J,~] = find(Au);
     hold on
     plot([fv1(I),fv1(J)]',[fv2(I),fv2(J)]')
     plot(threshold*[1,1],ylim,'k-')
     hold off
     title('communities (with links)')
+    
+    saveas(gcf,'NetworkCommunities.png');
 end
 
 % save network of largest community 
-if (mpos>=N-mpos)
-    A = W(pos(1:mpos),pos(1:mpos));
+if (mpos>=N_red-mpos)
+    A_red = A_red(pos(1:mpos),pos(1:mpos));
 else
-    A = W(pos(mpos+1:end),pos(mpos+1:end));
+    A_red = A_red(pos(mpos+1:end),pos(mpos+1:end));
 end
-save('previous_community','W')
-
-toc
 
 
+%% %%%%%%%%%%%%%%% Clustering coefficient %%%%%%%%%%%%%%%%%
+% % % N_red = 5; % decomment only in case of algorithm check
+% % % Au = [0 1 1 0 0;
+% % %       1 0 1 0 0;
+% % %       1 1 0 1 1;
+% % %       0 0 1 0 1;
+% % %       0 0 1 1 0];
 
+% Counting the triangles which each node belongs to
+tri = zeros(N_red,1);
+upper_tri = triu(Au);
+for i = 1:N_red
+    pos = find(Au(i,:));   
+    comp = Au(i,:);
+    for j = 1:length(pos)
+        pos_2 = upper_tri(pos(j),:);
+        temp = comp;
+        temp(pos(j)) = 0;
+        bridge = find(temp + pos_2 == 2);
+        tri(i) = tri(i) + length(bridge);
+    end
+end
 
+% total number of triangles
+n_tri = sum(tri);
 
+%% Clustering coefficient
+d = (full(sum(Au,1)))';
+C = 2*tri./(d.*(d-1));
+rm = find(isnan(C));
+C(rm) = 0;
+C_u = unique(C);
 
+% Average clustering coefficient
+C_avg = mean(C);
 
+% plot the distribution
+pdf_C = histc(C,C_u);
+figure('Name','pdf of Clustering coeff')
+plot(C_u,pdf_C,'.')
+grid
+xlabel('C');
+ylabel('pdf(C)');
+
+saveas(gcf,'CLusteringCpdf.png');
+
+save('OutputClustering','cond','A','n_tri','C_avg');
+
+%% %%%%%%%%%%%%%% Clustering coefficient for the whole network %%%%%%%%%%%%%%%%%
+
+% Counting the triangles which each node belongs to
+tri = zeros(N,1);
+if directed
+    Au = 1*(A+A'>0); % undirected full network
+else 
+    Au = A;
+end
+upper_tri = triu(Au);
+for i = 1:N
+    pos = find(Au(i,:));   
+    comp = Au(i,:);
+    for j = 1:length(pos)
+        pos_2 = upper_tri(pos(j),:);
+        temp = comp;
+        temp(pos(j)) = 0;
+        bridge = find(temp + pos_2 == 2);
+        tri(i) = tri(i) + length(bridge);
+    end
+end
+
+% total number of triangles
+n_tri = sum(tri);
+
+%% Clustering coefficient
+d = (full(sum(Au,1)))';
+C = 2*tri./(d.*(d-1));
+rm = find(isnan(C));
+C(rm) = 0;
+C_u = unique(C);
+
+% Average clustering coefficient
+C_avg = mean(C);
+
+% plot the distribution
+pdf_C = histc(C,C_u);
+figure('Name','Pdf of Clustering coeff for the full network')
+plot(C_u,pdf_C,'.')
+grid
+saveas(gcf,'CLusteringCpdfFull.png');
+xlabel('C');
+ylabel('pdf(C)');
+
+save('OutputClusteringull','cond','A','n_tri','C_avg');
