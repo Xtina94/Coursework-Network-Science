@@ -96,7 +96,6 @@ else
     Au = A_red;
 end
 
-
 if directed % find the largest connected component for the directed graph
     e1 = [1;zeros(N_red-1,1)];
     exit = false;
@@ -141,7 +140,7 @@ pr_ls = pr_ls/sum(pr_ls);
 toc
 
 % Through power iteration
-t = 25; % number of iterations
+t = 10; % number of iterations
 tic
 pr = ones(N_red,1)/N_red; % initial guess on p_0(i)
 s = zeros(t,1);
@@ -189,6 +188,40 @@ viscircles([0 0],abs(lambdas(1)),'Color','g');
 hold off
 grid
 
+%% TrustRank approach
+
+c = 0.85; %damping factor
+q = ones(N_red,1)/N_red; %teleportation vector
+d_out = (A_red)'*ones(size(A_red,1),1); %output degree vector
+d_out_2 = sum(A_red,2);
+diff = d_out - d_out_2;
+d_out = sparse(ones(length(d_out),1)./d_out); % d_out is already 1/d in this way
+d_out_2 = sparse(ones(length(d_out_2),1)./d_out_2);
+AdjM = A_red*sparse(diag(d_out)); %Weighted adjacency matrix
+M_11 = c*AdjM;
+M_12 = (1-c)*q;
+
+% Through linear system solution
+tic
+pr_ls = (sparse(eye(size(AdjM,1))) - M_11)\M_12;
+pr_ls = pr_ls/sum(pr_ls);
+toc
+
+% Through power iteration
+t = 10; % number of iterations
+tic
+pr = ones(N_red,1)/N_red; % initial guess on p_0(i)
+s = zeros(t,1);
+for i = 1:t
+    pr_old = pr;
+    % iterative step
+    pr = M_11*pr + M_12;
+    pr = pr/sum(pr);
+    s(i) = norm(pr - pr_ls)/sqrt(N_red);
+end
+toc
+distance = s;
+
 %% HITS equation evaluation - authorities scores
 
 AdjM = sparse(A_red*A_red');
@@ -214,17 +247,20 @@ toc
 thr_hubs = (abs(hits_ls(2,2)/hits_ls(1,1))).^(1:t);
 norm_thr = thr_hubs/thr_hubs(end); % normalized threshold
 convergence_hits = (s <= thr); %Checking if there is convergence in the solution
+n_iterForConv = find((s  - s(end)*norm_thr) < 1e-2,1);
 
 figure('Name','Convergence of the power iteration method for Hits authorities')
 set(0,'defaultTextInterpreter','latex') % to use LaTeX format
 semilogy((1:t),s)
 hold on
-semilogy((1:t),s(end)*norm_thr);
+semilogy((1:t),s(end)*norm_thr); % Minimum value correspondence
 hold off
 grid
 xlabel('k [iteration \#]')
 ylabel('$\|hits_k - hits_\infty\|$')
 title('Hits convergence')
+
+disp(['The power iteration method converges after ', num2str(n_iterForConv), ' iterations']);
 
 %% HITS equation evaluation - hubs scores
 

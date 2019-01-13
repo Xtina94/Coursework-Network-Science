@@ -12,6 +12,12 @@ Domande da fare:
 	eigenvalue.	PERO', nel caso ti molte iterazioni, la soglia viene falsata e l'algoritmo converge per poi divergere temporaneamente e ritornare alla
 	alla soglia alla fine. No prila, non cambia niete, è solo una questione di scala della rappresentazione.
 - Come calcolo il ranking dovuto a pagine accessibili?
+- Qual è la vera espressione del pageRank? Perchè in una formula ho p = cMp + (1-c)q e quindi r = 1/p, mentre in quella del paper ho r = cMr + (1-c)q...
+- Dobbiamo lavorare con una rete directed o undirected?
+- Devo normalizzare le techniche di neighbouring?
+
+
+
 - l'output degree (HW_pt3) è riferito a cosa? Perchè se lo calcolo con il solito modo "sum(A,2)" ottengo valori differenti che se faccio la moltiplicazione
 	per il vettore di 1 e ottengo una AdjM sbagliatissima
 	Se poi seguo la formula della slide gli eig non convergono
