@@ -97,6 +97,7 @@ N_red = N;
 %% Spectral domain info
 % Spectral domain info
 d = full(sum(Au)); % the degree vector
+myd = d;
 deg_sum = sum(d); % degrees sum
 Di = spdiags(1./sqrt(d'),0,N,N); % diagonal degrees square-rooted
 d = ones(N_red,1)./sqrt(d);
@@ -106,23 +107,65 @@ M = Au*Di*Di; % normalized adjacency matrix
 
 %% %%%%%%%%%%%%%%%%%%% Link prediction schemes %%%%%%%%%%%%%%%%%%%%%
 
+% Links removal - Randomly remove some links to create a temporal variation
+% in the network
+
+% Percentage of removed links
+rm = ceil(0.2*deg_sum);
+Au_bf = Au;
+
+% Higher degree nodes
+[myd, pos] = sort(myd,'descend');
+tot = 0;
+i = 1;
+while i < length(pos)
+    if tot < rm
+        tot = tot + sum(myd(i));
+        i = i + 1;
+    else
+        break;
+    end
+end
+
+Au_bf(pos(1:i),:) = 0;
+    
+% % % i = 0;
+% % % while i < rm
+% % %     row = randi(size(Au,1));
+% % %     pos = find(Au(row,:));
+% % %     if pos
+% % %         Au_bf(row,pos(randi(length(pos)))) = 0;
+% % %         i = i + 1;
+% % %     end
+% % % end
+
+%%%%%%%%% Similarity estimation with different techniques %%%%%%%%%
+
 % Common neighbour technique
-S_cn = Au*Au;
+S_cn = Au_bf*Au_bf;
 
 % Adamic Adar and Resource alloction techniques
 for i = 1:N_red
     for j = 1:N_red
-        cn(:,j) = Au(i,:).*Au(:,j)';
-        k = find(cn(:,j));
-        neigh_k = sum(Au(k,:));
-        neigh_k = neigh_k(neigh_k >1);
-        % AA technique
-        N_k = 1./log(neigh_k);
-        S_aa(i,j) = sum(N_k);
-        % RA technique
-        N_k = 1./neigh_k;
-        S_ra(i,j) = sparse(sum(N_k));
+        cn(j,:) = Au_bf(i,:).*Au_bf(j,:);
+        k = find(cn(j,:)); %common neighbours to both i and j
+        N_kaa = 0;
+        N_kra = 0;
+        for r = k
+            n_k = find(Au_bf(r,:)); %neighbours of the common neighbours
+            % AA technique
+            if length(n_k) > 1
+                N_kaa = N_kaa + (1/log(length(n_k)));
+            end
+            % RA technique
+            if ~isempty(r)
+                N_kra = N_kra + (1/length(n_k)); % The sum goes to inf becaus there are very many common neighbours with a low degree
+            end
+        end
+        S_aa(i,j) = N_kaa;
+        S_ra(i,j) = N_kra;
     end
+    y =3;
 end
 
 %%%%%% Path based techniques
@@ -132,35 +175,163 @@ damp = 0.75; % Damping factor
 % Katz technique
 diam = 5;
 l = 1:diam; % Take paths at most long "diam"
-S_ka = damp*Au;
+S_ka = damp*Au_bf;
 for i = 2:diam
-    S_ka = S_ka + (damp^i)*(Au^i);
+    S_ka = S_ka + (damp^i)*(Au_bf^i);
 end
 
 % Local Path (LP) technique
 
-S_lp = Au^2 + damp*(Au^3);
+S_lp = Au_bf^2 + damp*(Au_bf^3);
 
-%%%%%%%% Precision estimation
+%%%%%%%%% Precision estimation techniques %%%%%%%%%
 
-L = 20; % Top links based on S
-P = Au(1:30,:); %Probe set of edges
+%%% Precision method
+
+top_links = rm; % Top links based on S
+P = Au_bf(1:30,1:30); %Probe set of edges
 
 % Similarity measures ordered
-S_ra = triu(S_ra);
-S_ra_st = sort(S_ra,2); % Sort the elements of each row
-top_L = sort(S_ra_st(:,end));
-top_L = top_L(1:L);
-for i = 1:L
-    for j = 1:size(S_ra,1)
-        row = j;
-        col = find(S_ra(j,:) - top_L(i) == 0);
-    end
-    if col > 0
-        pos = pos + [row col];
+sim = 1;
+switch sim
+    case 1
+        tmp = S_ra;
+    case 2
+        tmp = S_aa;
+    case 3
+        tmp = S_cn;
+    case 4
+        tmp = S_lp;
+    case 5
+        tmp = S_ka;
+end
+
+i = 1;
+idx = zeros(rm,2);
+while i <= rm
+    [myMax, pos1] = max(tmp);
+    [Max,pos2] = max(myMax);
+    col(i) = pos2;
+    row(i) = pos1(col(i));
+    idx(i,1) = row(i);
+    idx(i,2) = col(i);
+    tmp(idx(i,1),idx(i,2)) = 0;
+    i = i + 1;
+end
+idx_top = idx;
+percentage_top = sum(row < 31)/deg_sum;
+
+switch sim
+    case 1
+        tmp = S_ra;
+    case 2
+        tmp = S_aa;
+    case 3
+        tmp = S_cn;
+    case 4
+        tmp = S_lp;
+    case 5
+        tmp = S_ka;
+end
+
+i = 1;
+while i <= rm
+    [myMin, pos1] = min(tmp);
+    [Min,pos2] = min(myMin);
+    col(i) = pos2;
+    row(i) = pos1(col(i));
+    idx(i,1) = row(i);
+    idx(i,2) = col(i);
+    tmp(idx(i,1),idx(i,2)) = 0;
+    i = i + 1;
+end
+idx_bottom = idx;
+percentage_bottom = sum(row < 31)/deg_sum;
+
+%%%%%% Confusion matrix generation %%%%%%
+% TP: check if in idx positions in actual Au there are links
+check = zeros(length(idx_top),1);
+for i = 1:length(idx_top)
+    check(i) = full(Au(idx_top(i,1),idx_top(i,2)) > 0);
+end
+tp = sum(check); % true positive edge predictions
+
+% FP: check if in idx positions in actual Au there are no links
+for i = 1:length(idx_top)
+    check(i) = full(Au(idx_top(i,1),idx_top(i,2)) == 0);
+end
+fp = sum(check); % false positive edge prediction
+
+% FN: check if in idx positions in actual Au there are actually links
+for i = 1:length(idx_bottom)
+    check(i) = full(Au(idx_bottom(i,1),idx_bottom(i,2)) > 0);
+end
+fn = sum(check);
+
+% TN: check if in idx positions in actual Au there are actually links
+for i = 1:length(idx_bottom)
+    check(i) = full(Au(idx_bottom(i,1),idx_bottom(i,2)) == 0);
+end
+tn = sum(check);
+
+% Precision estimation
+Prec = tp./(tp + fp);
+% Recall estimation - TPR
+Rec = tp./(tp + fn);
+% Specificity
+Spec = tn./(tn + fp);
+% F-measure
+F_m = (2.*Rec.*Prec)./(Rec+Prec);
+
+%%% AUC method
+
+% Creation of the Probe set and the Inactive set 
+P = triu(Au_bf(1:30,1:30)); %Probe set of edges
+In = triu(abs(Au_bf - ones(size(Au_bf,1),size(Au_bf,2)))); %Set of inactive edges
+
+% AUC implementation
+auc_aa = 0;
+auc_ra = 0;
+auc_ka = 0;
+auc_lp = 0;
+auc_cn = 0;
+for i = 1:size(In,1) % Rows of In
+    for j = 1:size(In,2) % Columns of In
+        for p = 1:size(P,1) % Rows of P
+            for k = 1:size(P,2) % Columns of P
+                if (In(i,j) == 1) && (P(p,k) == 1)
+                    auc_aa = auc_aa + (S_aa(p,k) > S_aa(i,j));
+                    auc_ra = auc_ra + (S_ra(p,k) > S_ra(i,j));
+                    auc_cn = auc_cn + (S_cn(p,k) > S_cn(i,j));
+                    auc_ka = auc_ka + (S_ka(p,k) > S_ka(i,j));
+                    auc_lp = auc_lp + (S_lp(p,k) > S_lp(i,j));
+                end
+            end
+        end
     end
 end
-percentage_top = sum(pos(1)< 31)/deg_sum;
+
+mod_In = sum(sum(In));
+mod_P = sum(sum(P));
+if mod_P == 0
+    mod_P = 1;
+end
+
+auc_aa = auc_aa/(mod_In*mod_P);
+auc_ra = auc_ra/(mod_In*mod_P);
+auc_ka = auc_ka/(mod_In*mod_P);
+auc_lp = auc_lp/(mod_In*mod_P);
+auc_cn = auc_cn/(mod_In*mod_P);
+
+%%%%%%% The ROC Curve %%%%%%%%
+
+% % % % Recall/True Positive Rate
+% % % for i = 1:size(Au,1)
+% % %     for j = 1:size(Au,2)
+% % %         if (S_lp(i,j)>)
+% % %     end
+% % % end
+
 
 %% %%%%%%%%%%%%%%%%%%%%% SPECTRAL CLUSTERING %%%%%%%%%%%%%%%%%%%%%%%
 
@@ -547,41 +718,41 @@ title('Hits convergence')
 
 disp(['The power iteration method converges after ', num2str(n_iterForConv), ' iterations']);
 
-%% HITS equation evaluation - hubs scores
-
-% Through linear system solution
-tic
-M_2 = c*AdjM;
-[hits_ls_vect, hits_ls] = eigs(M_2,2);
-pr_dir_hub = -hits_ls_vect(:,1)/norm(hits_ls_vect(:,1)); % Extract the most importand dimension and project the values wrt to that (SVD)
-toc
-
-% Through power iteration
-tic
-hits = ones(N_red,1)/N_red; % initial guess
-s = zeros(t,1);
-for i = 1:t
-    temp = hits;
-    hits = M_2*hits; % iterative step
-    hits = hits/norm(hits); % normalization step
-    s(i) = norm(hits - temp)/sqrt(N_red);
-end
-toc
-
-thr_hubs = (abs(hits_ls(2,2)/hits_ls(1,1))).^(1:t);
-norm_thr = thr_hubs/thr_hubs(end);
-convergence_hits = (s <= thr); %Checking if there is convergence in the solution
-
-figure('Name','Convergence of the power iteration method for Hits hubs')
-set(0,'defaultTextInterpreter','latex') % to use LaTeX format
-semilogy((1:t),s)
-hold on
-semilogy((1:t),s(end)*norm_thr);
-hold off
-grid
-xlabel('k [iteration \#]')
-ylabel('$\|hits_k - hits_\infty\|$')
-title('Hits convergence')
+% % % %% HITS equation evaluation - hubs scores
+% % % 
+% % % % Through linear system solution
+% % % tic
+% % % M_2 = c*AdjM;
+% % % [hits_ls_vect, hits_ls] = eigs(M_2,2);
+% % % pr_dir_hub = -hits_ls_vect(:,1)/norm(hits_ls_vect(:,1)); % Extract the most importand dimension and project the values wrt to that (SVD)
+% % % toc
+% % % 
+% % % % Through power iteration
+% % % tic
+% % % hits = ones(N_red,1)/N_red; % initial guess
+% % % s = zeros(t,1);
+% % % for i = 1:t
+% % %     temp = hits;
+% % %     hits = M_2*hits; % iterative step
+% % %     hits = hits/norm(hits); % normalization step
+% % %     s(i) = norm(hits - temp)/sqrt(N_red);
+% % % end
+% % % toc
+% % % 
+% % % thr_hubs = (abs(hits_ls(2,2)/hits_ls(1,1))).^(1:t);
+% % % norm_thr = thr_hubs/thr_hubs(end);
+% % % convergence_hits = (s <= thr); %Checking if there is convergence in the solution
+% % % 
+% % % figure('Name','Convergence of the power iteration method for Hits hubs')
+% % % set(0,'defaultTextInterpreter','latex') % to use LaTeX format
+% % % semilogy((1:t),s)
+% % % hold on
+% % % semilogy((1:t),s(end)*norm_thr);
+% % % hold off
+% % % grid
+% % % xlabel('k [iteration \#]')
+% % % ylabel('$\|hits_k - hits_\infty\|$')
+% % % title('Hits convergence')
 
 %% %%%%%%%%%%% Comparing PageRank and Hits %%%%%%%%%%%%%%
 

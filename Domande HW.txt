@@ -8,17 +8,17 @@ Domande da fare:
 	
 	
 - Nel cercare la componente connessa maggiore sto usando un grafo directed, è forse questo il punto per cui altrimenti l'algoritmo non funziona?
+
 - Osservazione: nel calcolo della convergenza di hits minore è il numero di iterazioni più la distanza ci mette a raggiungere la soglia del secondo
 	eigenvalue.	PERO', nel caso ti molte iterazioni, la soglia viene falsata e l'algoritmo converge per poi divergere temporaneamente e ritornare alla
-	alla soglia alla fine. No prila, non cambia niete, è solo una questione di scala della rappresentazione.
+	alla soglia alla fine. No pirla, non cambia niete, è solo una questione di scala della rappresentazione.
+	
+NOTA: N_k non può avere < 2 connessioni perchè è il risultato di un'intersezione fra due insiemi. Perciò se hai elementi così hai sbagliato qualcosa.
+
 - Come calcolo il ranking dovuto a pagine accessibili?
 - Qual è la vera espressione del pageRank? Perchè in una formula ho p = cMp + (1-c)q e quindi r = 1/p, mentre in quella del paper ho r = cMr + (1-c)q...
 - Dobbiamo lavorare con una rete directed o undirected?
 - Devo normalizzare le techniche di neighbouring?
+- Tra hubs e auth cambia solo una costante? No, la matrice è trasposta, perciò verifica le cose. In più stai avendo a che fare con una rete undirected
+	perciò ha senso che i risultati tra hubs e authorities siano uguali
 
-
-
-- l'output degree (HW_pt3) è riferito a cosa? Perchè se lo calcolo con il solito modo "sum(A,2)" ottengo valori differenti che se faccio la moltiplicazione
-	per il vettore di 1 e ottengo una AdjM sbagliatissima
-	Se poi seguo la formula della slide gli eig non convergono
-- Tra hubs e auth cambia solo una costante?
