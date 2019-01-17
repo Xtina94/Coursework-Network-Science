@@ -695,25 +695,11 @@ filename = 'TrustVal.mat';
 save(filename,'trust','distance');
 
 % Check if the trust score corresponds to the intended community
-thr = mean(trust);
-trust_1 = 0;
-trust_2 = 0;
 for i = 1:N_red
     if ismember(i,comm1) %good community
-        trust_1 = [trust_1, trust(i)];
-    else
-        trust_2 = [trust_2, trust(i)];
+        trust_1 = trust_1;
     end
 end
-trust_1 = trust_1(2:end);
-trust_2 = trust_2(2:end);
-check_1 = (trust_1 > thr);
-check_2 = (trust_2 < thr);
-
-% Percentage of pages considered trustworthy in the good community
-perc_trust = sum(check_1)/length(trust_1);
-% Percentage of pages considered untrustworthy in the bad community
-perc_distrust = sum(check_2)/length(trust_2);
 
 figure('Name','Convergence of the power iteration method for TrustRank equation')
 set(0,'defaultTextInterpreter','latex') % to use LaTeX format
